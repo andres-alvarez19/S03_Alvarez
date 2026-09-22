@@ -1,0 +1,72 @@
+{
+  "work_order_id": "WO-2026-922-01",
+  "project_id": "PRJ-2026-922",
+  "nivel": "T1",
+  "nivel_criterio_de_admision": "La ruta es enumerable, existe una decisión genuinamente ambigua al traducir un informe de defecto a una aserción y un fixture, y la salida es verificable por código.",
+  "medicion_que_autoriza_ascender": "intermediate_artifacts_with_independent_reader > 1 OR ledger.retry_cost_usd > ledger.intermediate_gate_cost_usd",
+  "objective": "Convertir cada informe de defecto admitido en al menos un caso de prueba ejecutable y trazable al informe, o abstenerse declarando la evidencia faltante cuando el defecto no pueda especificarse de forma verificable.",
+  "no_objectives": [
+    "Corregir el defecto o modificar código de producción.",
+    "Priorizar defectos, asignar severidad o decidir su urgencia de negocio.",
+    "Ejecutar pruebas contra producción, datos reales de personas o servicios externos.",
+    "Queda fuera del alcance de esta versión garantizar trazabilidad exacta entre cada aserción generada y el fragmento fuente del informe; se reabre cuando exista presupuesto para mantener test:traceability_matches_source."
+  ],
+  "consumer": "pipeline",
+  "scope": {
+    "include": [
+      "INPUT/raw/defect_reports/**",
+      "INPUT/raw/repository/**",
+      "INPUT/raw/defect_report_sample.md"
+    ],
+    "exclude": [
+      "entornos de producción",
+      "datos reales de personas",
+      "cambios en código de producción",
+      "llamadas de red no autorizadas"
+    ]
+  },
+  "acceptance": [
+    {
+      "id": "AC-01",
+      "criterion": "Cada informe admitido produce al menos un caso de prueba ejecutable cuya falla se debe a una aserción derivada del comportamiento esperado declarado y no a una falla incondicional del propio test.",
+      "verification": "validator:defect_reproduction_rate >= 1.0"
+    },
+    {
+      "id": "AC-02",
+      "criterion": "Cada archivo de prueba generado es descubierto por el runner registrado y contiene al menos un caso ejecutable asociado al identificador del informe de defecto.",
+      "verification": "test:generated_tests_collect_and_run"
+    },
+    {
+      "id": "AC-03",
+      "criterion": "Ningún caso generado escribe fuera del área de pruebas autorizada ni realiza llamadas de red o efectos externos.",
+      "verification": "test:no_external_effects"
+    },
+    {
+      "id": "AC-04",
+      "criterion": "Una corrida marcada como complete sólo es aceptable si finaliza dentro del presupuesto declarado de coste y tiempo.",
+      "verification": "ledger:status == complete AND cost_usd <= 0.50 AND wall_clock_s <= 300"
+    }
+  ],
+  "sources": [
+    {
+      "source_ref": "INPUT/raw/defect_report_sample.md",
+      "authority": "material-sintetico-de-la-actividad",
+      "effective_date": "2026-09-22",
+      "sha256": "3c7b8213290eaf7404b888beebc74ca00ca104ce92cd06c6a2ba3b60bb7309f3"
+    }
+  ],
+  "constraints": {
+    "data_classification": "internal",
+    "allowed_tools": ["repo_reader", "test_runner"],
+    "external_effects": []
+  },
+  "approvals_required_for": ["external_write", "deployment", "production_data"],
+  "expected_artifacts": [
+    "OUTPUT/v*/tests/generated/**",
+    "OUTPUT/v*/generation_report.json"
+  ],
+  "question_budget": {
+    "max_blocking_questions": 6,
+    "max_rounds": 2
+  }
+}
