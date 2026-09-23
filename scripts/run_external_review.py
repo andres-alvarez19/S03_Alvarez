@@ -13,6 +13,7 @@ import jsonschema
 from google import genai
 
 ROOT = Path(__file__).resolve().parents[1]
+FREE_TIER_MODEL = "gemini-3.8-flash"
 
 ARTIFACTS = [
     "work_order.json",
@@ -182,7 +183,12 @@ def main() -> int:
             "Falta GEMINI_API_KEY. Configúrala como variable de entorno o GitHub Actions secret."
         )
 
-    model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    model = os.getenv("GEMINI_MODEL", FREE_TIER_MODEL)
+    if model != FREE_TIER_MODEL:
+        raise SystemExit(
+            f"Modelo rechazado: {model}. Esta automatización está fijada a {FREE_TIER_MODEL} para mantener el diseño en Free tier."
+        )
+
     run_id = os.getenv("AUDIT_RUN_ID")
     if not run_id:
         run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -239,7 +245,8 @@ def main() -> int:
         "credential_source": "GEMINI_API_KEY environment variable / GitHub Actions secret",
         "credential_value_recorded": False,
         "free_tier_expected": True,
-        "free_tier_enforced_by_code": False,
+        "free_tier_model_enforced": True,
+        "free_tier_billing_enforced_by_code": False,
         "git_commit_evaluated": git_sha(),
         "github": {
             "workflow": os.getenv("GITHUB_WORKFLOW"),
