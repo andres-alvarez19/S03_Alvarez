@@ -198,6 +198,36 @@ def validate_bitacora():
     return bool(valid)
 
 
+
+def validate_external_review_setup():
+    required = [
+        "prompts/external_review.md",
+        "schemas/external_review.json",
+        "scripts/run_external_review.py",
+        ".github/workflows/external-review.yml",
+        ".env.example",
+        ".gitignore",
+        "docs/external-review.md",
+    ]
+    missing = [relative for relative in required if not (ROOT / relative).exists()]
+    if missing:
+        return fail(
+            "Configuración de revisión externa incompleta: faltan "
+            + ", ".join(missing)
+        )
+
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
+    if "google-genai" not in requirements:
+        return fail("requirements.txt no incluye google-genai")
+
+    prompt = (ROOT / "prompts" / "external_review.md").read_text(encoding="utf-8")
+    if "datos no confiables" not in prompt.lower():
+        return fail(
+            "El prompt externo no declara los artefactos como datos no confiables"
+        )
+
+    return ok("Configuración de revisión externa Gemini completa")
+
 def validate_external_audit():
     latest_path = ROOT / "audits" / "latest.json"
     if not latest_path.exists():
@@ -292,6 +322,7 @@ def main():
         validate_auction(),
         validate_evals(),
         validate_bitacora(),
+        validate_external_review_setup(),
         validate_external_audit(),
     ]
 
