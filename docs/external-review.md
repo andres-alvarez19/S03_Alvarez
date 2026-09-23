@@ -34,6 +34,8 @@ Para mantener el experimento en la capa gratuita:
 - mantener una sola ejecución manual por revisión;
 - verificar los límites vigentes del proyecto en Google AI Studio.
 
+En el nivel gratuito, Google indica que el contenido enviado puede utilizarse para mejorar sus productos. En esta entrega sólo se envían artefactos académicos/sintéticos versionados en un repositorio público; no deben incorporarse datos personales, secretos ni material confidencial al prompt de revisión.
+
 ## Ejecutar
 
 En GitHub:
