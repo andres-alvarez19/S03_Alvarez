@@ -2,12 +2,6 @@ name: external-agent-review
 
 on:
   workflow_dispatch:
-    inputs:
-      model:
-        description: "Modelo Gemini para la revisión"
-        required: true
-        default: "gemini-3.8-flash"
-        type: string
 
 permissions:
   contents: write
@@ -17,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ inputs.model }}
+      GEMINI_MODEL: gemini-3.8-flash
       AUDIT_RUN_ID: gha-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
