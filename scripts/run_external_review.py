@@ -208,7 +208,7 @@ def main() -> int:
             "temperature": 0.2,
             "max_output_tokens": 5000,
             "response_mime_type": "application/json",
-            "response_schema": generation_schema,
+            "response_json_schema": generation_schema,
         },
     )
 
@@ -247,6 +247,7 @@ def main() -> int:
         "free_tier_expected": True,
         "free_tier_model_enforced": True,
         "free_tier_billing_enforced_by_code": False,
+        "structured_output_mode": "response_json_schema",
         "git_commit_evaluated": git_sha(),
         "github": {
             "workflow": os.getenv("GITHUB_WORKFLOW"),
