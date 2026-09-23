@@ -22,7 +22,7 @@ clave estándar antigua puede ser rechazada. Generar/administrar la clave desde 
 
 ## Capa gratuita
 
-El workflow está fijado a `gemini-3.8-flash` y realiza **una llamada por revisión**. La intención es
+El workflow solicita primero `gemini-3.8-flash`. Si Google devuelve un error transitorio persistente (429/500/502/503/504), el script usa como fallback `gemini-3.5-flash` y luego `gemini-3.5-flash-lite`. Los tres pertenecen al diseño de Free tier y admiten salida estructurada. Cada modelo aprovecha primero los reintentos internos del SDK. La intención es
 trabajar con un proyecto Gemini en Free tier. El código no puede imponer el nivel de facturación de la
 cuenta: si la clave pertenece a un proyecto con facturación habilitada, las condiciones de ese proyecto
 prevalecen.
@@ -43,7 +43,7 @@ En GitHub:
 1. Abrir **Actions**.
 2. Seleccionar **external-agent-review**.
 3. Pulsar **Run workflow**.
-4. El workflow utiliza `gemini-3.8-flash`. El script rechaza otro modelo para mantener la automatización dentro del diseño de Free tier.
+4. El workflow parte con `gemini-3.8-flash` y sólo puede hacer fallback a la lista Free tier documentada; no acepta modelos arbitrarios.
 
 El workflow:
 
