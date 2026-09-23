@@ -11,9 +11,16 @@ from pathlib import Path
 
 import jsonschema
 from google import genai
+from google.genai import errors
 
 ROOT = Path(__file__).resolve().parents[1]
-FREE_TIER_MODEL = "gemini-3.8-flash"
+FREE_TIER_MODELS = (
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+)
+DEFAULT_MODEL = FREE_TIER_MODELS[0]
+RETRIABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 ARTIFACTS = [
     "work_order.json",
@@ -176,6 +183,59 @@ def serializable_usage(response):
         return str(usage)
 
 
+
+def generate_with_free_tier_fallback(client, request_text, generation_schema, primary_model):
+    if primary_model not in FREE_TIER_MODELS:
+        raise SystemExit(
+            f"Modelo rechazado: {primary_model}. Permitidos en esta automatización: "
+            + ", ".join(FREE_TIER_MODELS)
+        )
+
+    model_order = [primary_model] + [
+        model for model in FREE_TIER_MODELS if model != primary_model
+    ]
+    failures = []
+    last_error = None
+
+    for model in model_order:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=request_text,
+                config={
+                    "temperature": 0.2,
+                    "max_output_tokens": 5000,
+                    "response_mime_type": "application/json",
+                    "response_json_schema": generation_schema,
+                },
+            )
+            return response, model, failures
+        except errors.APIError as exc:
+            last_error = exc
+            failure = {
+                "model": model,
+        "requested_model": requested_model,
+        "free_tier_fallback_failures": fallback_failures,
+                "code": exc.code,
+                "message": exc.message,
+            }
+            failures.append(failure)
+            print(
+                f"[WARN] Gemini {model} falló con HTTP {exc.code}: {exc.message}",
+                flush=True,
+            )
+            if exc.code not in RETRIABLE_STATUS_CODES:
+                raise
+            print(
+                "[WARN] Error transitorio tras los reintentos internos del SDK; "
+                "se probará el siguiente modelo Free tier.",
+                flush=True,
+            )
+
+    raise RuntimeError(
+        "Todos los modelos Free tier configurados fallaron con errores transitorios."
+    ) from last_error
+
 def main() -> int:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -183,11 +243,7 @@ def main() -> int:
             "Falta GEMINI_API_KEY. Configúrala como variable de entorno o GitHub Actions secret."
         )
 
-    model = os.getenv("GEMINI_MODEL", FREE_TIER_MODEL)
-    if model != FREE_TIER_MODEL:
-        raise SystemExit(
-            f"Modelo rechazado: {model}. Esta automatización está fijada a {FREE_TIER_MODEL} para mantener el diseño en Free tier."
-        )
+    requested_model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
 
     run_id = os.getenv("AUDIT_RUN_ID")
     if not run_id:
@@ -201,15 +257,11 @@ def main() -> int:
     generation_schema = sanitize_schema_for_gemini(response_schema)
 
     client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model=model,
-        contents=request_text,
-        config={
-            "temperature": 0.2,
-            "max_output_tokens": 5000,
-            "response_mime_type": "application/json",
-            "response_json_schema": generation_schema,
-        },
+    response, model, fallback_failures = generate_with_free_tier_fallback(
+        client,
+        request_text,
+        generation_schema,
+        requested_model,
     )
 
     if not response.text:
