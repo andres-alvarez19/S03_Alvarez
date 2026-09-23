@@ -214,8 +214,6 @@ def generate_with_free_tier_fallback(client, request_text, generation_schema, pr
             last_error = exc
             failure = {
                 "model": model,
-        "requested_model": requested_model,
-        "free_tier_fallback_failures": fallback_failures,
                 "code": exc.code,
                 "message": exc.message,
             }
@@ -290,6 +288,8 @@ def main() -> int:
         "run_id": run_id,
         "provider": "Google Gemini Developer API",
         "model": model,
+        "requested_model": requested_model,
+        "free_tier_fallback_failures": fallback_failures,
         "sdk": {
             "package": "google-genai",
             "version": importlib.metadata.version("google-genai"),
