@@ -1,8 +1,7 @@
 # Preguntas para cerrar ambigüedad
 
-Estas preguntas derivan de las siete clases de dato bloqueante de la actividad. El `work_order.json`
-incluye decisiones provisionales para poder construir el artefacto; si el docente entrega valores
-oficiales, deben reemplazarse.
+Estas preguntas derivan de las siete clases de dato bloqueante de la actividad y contienen únicamente datos que
+siguen bloqueando una corrida real después de la subasta.
 
 1. `source.test_runner` — ¿Cuál es el comando/runner autoritativo del repositorio objetivo?
    - A) el comando documentado por el repositorio;
@@ -16,9 +15,7 @@ oficiales, deben reemplazarse.
    - C) conservar ambos y marcar la contradicción como bloqueante.
    - Coste de adivinar mal: convertir una descripción obsoleta en un test que congela un comportamiento incorrecto.
 
-3. `budget.run` — ¿El presupuesto propuesto de USD 0,50 y 300 s por corrida es aceptado para este encargo?
-   - A) sí;
-   - B) reemplazar por los valores entregados por el docente.
-   - Coste de adivinar mal: diseñar una verificación de coste/latencia incompatible con la evaluación real.
+El presupuesto de USD 0,50 / 300 s dejó de ser dato bloqueante de esta versión porque AC-04 no fue comprado en R4 y
+quedó registrado como no-objetivo con condición de reapertura.
 
-status: needs_user_input para cualquier corrida real que no tenga resueltos los puntos 1 y 2.
+**Estado:** `needs_user_input` para cualquier corrida real que no tenga resueltos los puntos 1 y 2.
