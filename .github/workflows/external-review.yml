@@ -2,6 +2,9 @@ name: external-agent-review
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".external-review-trigger"
 
 permissions:
   contents: write
