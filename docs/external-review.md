@@ -22,7 +22,7 @@ clave estándar antigua puede ser rechazada. Generar/administrar la clave desde 
 
 ## Capa gratuita
 
-El workflow usa por defecto `gemini-3.8-flash` y realiza **una llamada por revisión**. La intención es
+El workflow está fijado a `gemini-3.8-flash` y realiza **una llamada por revisión**. La intención es
 trabajar con un proyecto Gemini en Free tier. El código no puede imponer el nivel de facturación de la
 cuenta: si la clave pertenece a un proyecto con facturación habilitada, las condiciones de ese proyecto
 prevalecen.
@@ -43,7 +43,7 @@ En GitHub:
 1. Abrir **Actions**.
 2. Seleccionar **external-agent-review**.
 3. Pulsar **Run workflow**.
-4. Mantener `gemini-3.8-flash` salvo que se documente expresamente otro modelo.
+4. El workflow utiliza `gemini-3.8-flash`. El script rechaza otro modelo para mantener la automatización dentro del diseño de Free tier.
 
 El workflow:
 
