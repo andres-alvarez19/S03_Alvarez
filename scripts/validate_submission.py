@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import hashlib
 import json
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,9 +16,18 @@ def ok(msg):
     return True
 
 
+def warn(msg):
+    print(f"[WARN] {msg}")
+    return True
+
+
 def load_json(path):
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def sha256_path(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def validate_schema(instance, schema):
@@ -185,8 +195,89 @@ def validate_bitacora():
     if valid:
         valid &= ok("bitacora.md documenta los cinco criterios iniciales")
 
-    if "PENDIENTE" in txt:
-        print("[WARN] R3 contiene pendientes de revisión cruzada real; esto no invalida la estructura local.")
+    return bool(valid)
+
+
+def validate_external_audit():
+    latest_path = ROOT / "audits" / "latest.json"
+    if not latest_path.exists():
+        return warn(
+            "Revisión externa preparada pero todavía no ejecutada: no existe audits/latest.json."
+        )
+
+    try:
+        import jsonschema
+    except ImportError:
+        return fail("Falta dependencia jsonschema para verificar la auditoría externa")
+
+    latest = load_json(latest_path)
+    run_dir = ROOT / latest["run_directory"]
+    required = ["request.md", "review.json", "review.md", "manifest.json"]
+    missing = [name for name in required if not (run_dir / name).exists()]
+    if missing:
+        return fail(f"Auditoría externa incompleta: faltan {', '.join(missing)}")
+
+    schema = load_json(ROOT / "schemas" / "external_review.json")
+    review = load_json(run_dir / "review.json")
+    manifest = load_json(run_dir / "manifest.json")
+
+    try:
+        jsonschema.Draft202012Validator(schema).validate(review)
+    except jsonschema.ValidationError as e:
+        route = "/".join(map(str, e.path)) or "<root>"
+        return fail(f"review.json no cumple schema externo: {e.message} ({route})")
+
+    valid = True
+
+    attacks = review["attacks"]
+    attacked_ids = {item["criterion_id"] for item in attacks}
+    if len(attacks) < 3 or len(attacked_ids) < 3:
+        valid &= fail("La auditoría externa no contiene tres ataques sobre criterios distintos")
+    else:
+        valid &= ok("Auditoría externa contiene al menos tres ataques sobre criterios distintos")
+
+    if not any(item["is_original"] for item in attacks):
+        valid &= fail("La auditoría externa no contiene ataque original")
+    else:
+        valid &= ok("Auditoría externa contiene al menos un ataque original")
+
+    expected = {f"AC-0{i}" for i in range(1, 6)}
+    assessed = {item["criterion_id"] for item in review["criteria_assessment"]}
+    if assessed != expected:
+        valid &= fail("La auditoría externa no evalúa exactamente AC-01...AC-05")
+    else:
+        valid &= ok("Auditoría externa evalúa exactamente AC-01...AC-05")
+
+    review_hash = sha256_path(run_dir / "review.json")
+    request_hash = sha256_path(run_dir / "request.md")
+
+    if review_hash != manifest.get("review_sha256"):
+        valid &= fail("Hash de review.json no coincide con manifest.json")
+    elif review_hash != latest.get("review_sha256"):
+        valid &= fail("Hash de review.json no coincide con audits/latest.json")
+    else:
+        valid &= ok("Hash de review.json verificado")
+
+    if request_hash != manifest.get("request_sha256"):
+        valid &= fail("Hash de request.md no coincide con manifest.json")
+    else:
+        valid &= ok("Hash de request.md verificado")
+
+    for relative, expected_hash in manifest.get("input_sha256", {}).items():
+        path = ROOT / relative
+        if not path.exists():
+            valid &= fail(f"Entrada auditada ya no existe: {relative}")
+            continue
+        current_hash = sha256_path(path)
+        if current_hash != expected_hash:
+            valid &= fail(
+                f"Auditoría externa obsoleta: cambió {relative} desde la revisión"
+            )
+
+    if valid:
+        valid &= ok(
+            f"Auditoría externa íntegra: {latest.get('run_id')} / modelo {latest.get('model')}"
+        )
 
     return bool(valid)
 
@@ -201,6 +292,7 @@ def main():
         validate_auction(),
         validate_evals(),
         validate_bitacora(),
+        validate_external_audit(),
     ]
 
     print()
