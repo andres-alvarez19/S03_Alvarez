@@ -17,11 +17,9 @@ Medición que autoriza ascender a T2:
 
 ## R2 · Cinco criterios iniciales y autoataque
 
-> Nota: la actividad exige revisión cruzada con otra persona. Como no se dispone de una orden ajena ni de un revisor humano
-> en este momento, la columna “ataque recibido” contiene **autoataques simulados**. Debe reemplazarse/complementarse durante
-> la ronda de revisión cruzada real.
+Los cinco criterios se sometieron primero a autoataque para detectar defectos evidentes antes de la revisión externa.
 
-| Criterio | Verificación declarada | Sabor | Ataque recibido / autoataque simulado | Versión corregida | Fichas |
+| Criterio | Verificación declarada | Sabor | Autoataque | Versión corregida | Fichas |
 |---|---|---|---|---|---:|
 | AC-01 · Cada informe produce un test que falla en el estado defectuoso. | `validator:defect_reproduction_rate >= 1.0` | Validador con umbral | Un test con `assert False` siempre falla y alcanza una tasa aparente de 1.0 sin reproducir el defecto. | Exigir que la falla provenga de una aserción derivada del comportamiento esperado y prohibir una falla incondicional del propio test. | 40 |
 | AC-02 · Cada archivo generado se ejecuta con el runner. | `test:generated_tests_collect_and_run` | Test nombrado | Un archivo vacío puede dejar al runner con salida exitosa aunque no haya ningún test útil. | Exigir que el runner descubra al menos un caso ejecutable y que esté asociado al identificador del informe. | 25 |
@@ -29,25 +27,39 @@ Medición que autoriza ascender a T2:
 | AC-04 · La corrida respeta coste y tiempo. | `ledger:cost_usd <= 0.50 AND wall_clock_s <= 300` | Ledger | Detenerse antes de terminar permite respetar presupuesto sin hacer el trabajo. | El presupuesto sólo se evalúa para corridas marcadas `complete`; una corrida incompleta debe declararse y ser reanudable. | 15 |
 | AC-05 · Cada aserción cita el fragmento fuente del informe. | `test:traceability_matches_source` | Test nombrado | Copiar siempre la misma referencia o una cita irrelevante satisface presencia de cita sin trazabilidad real. | Comprobar que el localizador existe y que el fragmento citado coincide con la evidencia usada por la aserción. | 25 |
 
-## R3 · Ataque cruzado
+## R3 · Revisión cruzada con agente externo
 
-**Pendiente de interacción real con otro estudiante.** No se fabrica evidencia de una revisión que no ocurrió.
+La revisión cruzada se realizará mediante un **agente externo de Google Gemini** y queda diseñada para ser reproducible y auditable.
+No se registra como revisión humana ni como trabajo de otro estudiante.
 
-### Plantillas de ataque preparadas (no sustituyen la revisión cruzada)
+### Protocolo
 
-1. **Cita mínima viable**: si una orden ajena sólo exige “cada afirmación cita una fuente”, producir varias afirmaciones con
-   la misma referencia y demostrar que el validador sólo comprueba presencia.
-2. **Parada anticipada**: si sólo existe un tope de pasos/tiempo, terminar justo antes del límite con salida parcial no marcada.
-3. **Ataque propio — test fantasma**: si el criterio sólo exige que “exista un archivo de test”, crear un archivo con nombre
-   correcto que el runner no descubre o que contiene cero casos.
+1. Se ejecuta primero `scripts/validate_submission.py`.
+2. `scripts/run_external_review.py` construye la solicitud a partir de `prompts/external_review.md` y de los artefactos versionados.
+3. Los artefactos se delimitan como **datos no confiables** para evitar que una instrucción incrustada altere al revisor.
+4. Gemini debe producir al menos tres ataques concretos sobre criterios distintos, con al menos un ataque original fuera del mazo conocido.
+5. La respuesta debe evaluar exactamente AC-01...AC-05 y cumplir `schemas/external_review.json`.
+6. La respuesta se valida antes de aceptarse.
+7. Se guardan prompt, respuesta, representación legible y manifiesto con hashes SHA-256 en `audits/runs/<run_id>/`.
+8. La API key nunca se guarda ni se deriva en la auditoría; sólo se registra que provino de `GEMINI_API_KEY`.
 
-### Tabla 3.B — completar con la orden realmente asignada
+### Evidencia de la corrida
 
-| Orden atacada (autor) | Criterio atacado | Salida concreta que lo cumple sin hacer el trabajo | Por qué el validador la aceptaría |
-|---|---|---|---|
-| PENDIENTE | PENDIENTE | PENDIENTE | PENDIENTE |
-| PENDIENTE | PENDIENTE | PENDIENTE | PENDIENTE |
-| PENDIENTE | PENDIENTE | PENDIENTE | PENDIENTE |
+El puntero `audits/latest.json` se crea únicamente después de una llamada válida al agente externo. Mientras no exista,
+la revisión está **preparada pero no ejecutada**.
+
+Cuando exista una corrida, los ataques recibidos y las reescrituras sugeridas deben tomarse de:
+
+- `audits/latest.json` → identifica la corrida;
+- `audits/runs/<run_id>/review.json` → evidencia estructurada;
+- `audits/runs/<run_id>/review.md` → lectura humana;
+- `audits/runs/<run_id>/manifest.json` → trazabilidad técnica.
+
+### Sobre la equivalencia con la revisión de clase
+
+Este mecanismo produce una revisión independiente por un segundo agente y deja evidencia completa de cómo se obtuvo.
+Si el docente interpreta “revisión cruzada” como participación obligatoria de otro estudiante humano, esta automatización
+no afirma sustituir ese requisito.
 
 ## R4 · Subasta de alcance
 
@@ -82,7 +94,7 @@ Cada archivo contiene entrada, estado inicial y veredicto esperado.
 
 ## Estado de la actividad
 
-Construido: R1, R2, autoataque, R4, R5, nivel, preguntas bloqueantes, schema local y validación local.
+Construido: R1, R2, autoataque, protocolo R3 con agente externo, R4, R5, nivel, preguntas bloqueantes, schema local,
+schema de revisión externa, validación local, workflow de Gemini y auditoría reproducible.
 
-Pendiente para satisfacer literalmente la dinámica de clase: R3 con otro estudiante y validación contra el schema oficial
-si el docente/repo lo proporciona.
+Pendiente de ejecución: configurar `GEMINI_API_KEY` como secret y lanzar el workflow `external-agent-review`.
