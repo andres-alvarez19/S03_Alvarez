@@ -38,6 +38,20 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def sanitize_schema_for_gemini(value):
+    """Reduce el schema al subconjunto aceptado por structured output de Gemini."""
+    unsupported = {"$schema", "$id", "pattern", "minLength", "maxLength", "uniqueItems"}
+    if isinstance(value, dict):
+        return {
+            key: sanitize_schema_for_gemini(item)
+            for key, item in value.items()
+            if key not in unsupported
+        }
+    if isinstance(value, list):
+        return [sanitize_schema_for_gemini(item) for item in value]
+    return value
+
+
 def git_sha() -> str | None:
     if os.getenv("GITHUB_SHA"):
         return os.environ["GITHUB_SHA"]
@@ -178,6 +192,7 @@ def main() -> int:
     prompt_hash = sha256_bytes(request_text.encode("utf-8"))
 
     response_schema = json.loads(read_text(ROOT / "schemas" / "external_review.json"))
+    generation_schema = sanitize_schema_for_gemini(response_schema)
 
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
@@ -187,7 +202,7 @@ def main() -> int:
             "temperature": 0.2,
             "max_output_tokens": 5000,
             "response_mime_type": "application/json",
-            "response_schema": response_schema,
+            "response_schema": generation_schema,
         },
     )
 
