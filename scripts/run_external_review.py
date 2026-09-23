@@ -205,7 +205,7 @@ def main() -> int:
     run_dir = ROOT / "audits" / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
 
-    (run_dir / "request.md").write_text(request_text + "\n", encoding="utf-8")
+    (run_dir / "request.md").write_text(request_text, encoding="utf-8")
     (run_dir / "review.json").write_text(canonical_review, encoding="utf-8")
     (run_dir / "review.md").write_text(
         render_markdown(review, model, run_id), encoding="utf-8"
