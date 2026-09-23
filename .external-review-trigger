@@ -1,2 +1,2 @@
-trigger: 2026-09-22T21:39:00-03:00
-reason: rerun-after-response-json-schema-fix
+trigger: 2026-09-22T21:59:00-03:00
+reason: retry-after-503-with-free-tier-fallback
